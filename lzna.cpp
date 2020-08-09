@@ -1,5 +1,8 @@
-#include "stdafx.h"
 
+#include "lzna.h"
+#include <string.h>
+#include <intrin.h>
+#include <assert.h>
 
 typedef uint16 LznaBitModel;
 

@@ -1,37 +1,6 @@
-#include "stdafx.h"
-
-struct BitknitLiteral {
-  uint16 lookup[512 + 4];
-  uint16 a[300 + 1];
-  uint16 freq[300];
-  uint32 adapt_interval;
-};
-
-struct BitknitDistanceLsb {
-  uint16 lookup[64 + 4];
-  uint16 a[40 + 1];
-  uint16 freq[40];
-  uint32 adapt_interval;
-};
-
-struct BitknitDistanceBits {
-  uint16 lookup[64 + 4];
-  uint16 a[21 + 1];
-  uint16 freq[21];
-  uint32 adapt_interval;
-};
-
-
-struct BitknitState {
-  uint32 recent_dist[8];
-  uint32 last_match_dist;
-  uint32 recent_dist_mask;
-  uint32 bits, bits2;
-
-  BitknitLiteral literals[4];
-  BitknitDistanceLsb distance_lsb[4];
-  BitknitDistanceBits distance_bits;
-};
+#include "bitknit.h"
+#include <string.h>
+#include <assert.h>
 
 void BitknitLiteral_Init(BitknitLiteral *model) {
   size_t i;
