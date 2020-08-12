@@ -37,6 +37,7 @@ typedef struct BitReader {
 
 int Kraken_DecodeBytes(uint8_t**output, const uint8_t*src, const uint8_t*src_end, int *decoded_size, size_t output_size, bool force_memmove,
                        uint8_t*scratch, uint8_t*scratch_end);
+int Kraken_Decompress(const uint8_t*src, size_t src_len, uint8_t*dst, size_t dst_len);
 int Kraken_GetBlockSize(const uint8_t*src, const uint8_t*src_end, int *dest_size, int dest_capacity);
 int Huff_ConvertToRanges(HuffRange *range, int num_symbols, int P, const uint8_t*symlen, BitReader *bits);
 
