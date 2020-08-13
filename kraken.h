@@ -20,6 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define OOZ_KRAKEN_H
 
 #include <cstdint>
+#include <cstddef>
+#include <cstdbool>
+#include "export.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct HuffRange {
     uint16_t symbol;
@@ -35,10 +42,13 @@ typedef struct BitReader {
     int bitpos;
 } BitReader;
 
-int Kraken_DecodeBytes(uint8_t**output, const uint8_t*src, const uint8_t*src_end, int *decoded_size, size_t output_size, bool force_memmove,
-                       uint8_t*scratch, uint8_t*scratch_end);
-int Kraken_Decompress(const uint8_t*src, size_t src_len, uint8_t*dst, size_t dst_len);
-int Kraken_GetBlockSize(const uint8_t*src, const uint8_t*src_end, int *dest_size, int dest_capacity);
-int Huff_ConvertToRanges(HuffRange *range, int num_symbols, int P, const uint8_t*symlen, BitReader *bits);
+OOZ_EXPORT int Kraken_DecodeBytes(uint8_t** output, const uint8_t* src, const uint8_t* src_end, int* decoded_size, size_t output_size,
+                                  bool force_memmove, uint8_t* scratch, uint8_t* scratch_end);
+OOZ_EXPORT int Kraken_Decompress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_len);
+OOZ_EXPORT int Kraken_GetBlockSize(const uint8_t* src, const uint8_t* src_end, int* dest_size, int dest_capacity);
+OOZ_EXPORT int Huff_ConvertToRanges(HuffRange* range, int num_symbols, int P, const uint8_t* symlen, BitReader* bits);
 
+#ifdef __cplusplus
+}
+#endif
 #endif // OOZ_KRAKEN_H

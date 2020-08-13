@@ -20,7 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define OOZ_BITKNIT_H
 
 #include <cstdint>
+#include <cstddef>
+#include <cstdbool>
+#include "export.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 struct BitknitLiteral {
     uint16_t lookup[512 + 4];
     uint16_t a[300 + 1];
@@ -53,7 +59,10 @@ struct BitknitState {
     BitknitDistanceBits distance_bits;
 };
 
-void BitknitState_Init(BitknitState *bk);
-size_t Bitknit_Decode(const uint8_t*src, const uint8_t*src_end, uint8_t*dst, uint8_t*dst_end, uint8_t*dst_start, BitknitState *bk);
+OOZ_EXPORT void BitknitState_Init(BitknitState* bk);
+OOZ_EXPORT size_t Bitknit_Decode(const uint8_t* src, const uint8_t* src_end, uint8_t* dst, uint8_t* dst_end, uint8_t* dst_start, BitknitState* bk);
 
+#ifdef __cplusplus
+}
+#endif
 #endif // OOZ_BITKNIT_H
