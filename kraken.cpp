@@ -22,8 +22,59 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstdlib>
 #include <cstring>
-#include <intrin.h>
 #include <cassert>
+
+#ifdef _WIN32
+#include <intrin.h>
+#else
+#include <immintrin.h>
+#include <byteswap.h>
+#define _byteswap_ulong(x) bswap_64(x)
+#define _byteswap_uint64(x) bswap_64(x)
+#define _byteswap_ushort(x) bswap_16(x)
+#define __forceinline __inline__ __attribute__((always_inline))
+// https://github.com/microsoft/clang/blob/b36297ebe8f17857fe354c19dbc6dfa9d14f3c42/lib/Headers/immintrin.h#L164
+static unsigned int __forceinline
+_rotl(unsigned int _Value, int _Shift) {
+    _Shift &= 0x1f;
+    return _Shift ? (_Value << _Shift) | (_Value >> (32 - _Shift)) : _Value;
+}
+#endif
+
+
+// https://github.com/dotnet/coreclr/blob/ed5dc831b09a0bfed76ddad684008bebc86ab2f0/src/gc/env/gcenv.base.h#L246
+// Cross-platform wrapper for the _BitScanForward compiler intrinsic.
+// A value is unconditionally stored through the bitIndex argument,
+// but callers should only rely on it when the function returns TRUE;
+// otherwise, the stored value is undefined and varies by implementation
+// and hardware platform.
+static inline uint8_t BitScanForward(unsigned long *bitIndex, uint32_t mask)
+{
+#ifdef _MSC_VER
+    return _BitScanForward(bitIndex, mask);
+#else // _MSC_VER
+    int iIndex = __builtin_ffs(mask);
+    *bitIndex = static_cast<uint32_t>(iIndex - 1);
+    return mask != 0;
+#endif // _MSC_VER
+}
+
+// Cross-platform wrapper for the _BitScanReverse compiler intrinsic.
+inline uint8_t BitScanReverse(unsigned long *bitIndex, uint32_t mask)
+{
+#ifdef _MSC_VER
+    return _BitScanReverse(bitIndex, mask);
+#else // _MSC_VER
+    // The result of __builtin_clzl is undefined when mask is zero,
+    // but it's still OK to call the intrinsic in that case (just don't use the output).
+    // Unconditionally calling the intrinsic in this way allows the compiler to
+    // emit branchless code for this function when possible (depending on how the
+    // intrinsic is implemented for the target platform).
+    int lzcount = __builtin_clzl(mask);
+    *bitIndex = static_cast<uint32_t>(31 - lzcount);
+    return mask != 0;
+#endif // _MSC_VER
+}
 
 // Header in front of each 256k block
 typedef struct KrakenHeader {
@@ -192,13 +243,13 @@ void FreeAligned(void *p) {
 
 uint32_t BSR(uint32_t x) {
   unsigned long index;
-  _BitScanReverse(&index, x);
+  BitScanReverse(&index, x);
   return index;
 }
 
 uint32_t BSF(uint32_t x) {
   unsigned long index;
-  _BitScanForward(&index, x);
+  BitScanForward(&index, x);
   return index;
 }
 
@@ -291,7 +342,7 @@ int BitReader_ReadGamma(BitReader *bits) {
   int n;
   int r;
   if (bits->bits != 0) {
-    _BitScanReverse(&bitresult, bits->bits);
+    BitScanReverse(&bitresult, bits->bits);
     n = 31 - bitresult;
   } else {
     n = 32;
@@ -306,7 +357,7 @@ int BitReader_ReadGamma(BitReader *bits) {
 
 int CountLeadingZeros(uint32_t bits) {
   unsigned long x;
-  _BitScanReverse(&x, bits);
+  BitScanReverse(&x, bits);
   return 31 - x;
 }
 
@@ -315,7 +366,7 @@ int BitReader_ReadGammaX(BitReader *bits, int forced) {
   unsigned long bitresult;
   int r;
   if (bits->bits != 0) {
-    _BitScanReverse(&bitresult, bits->bits);
+    BitScanReverse(&bitresult, bits->bits);
     int lz = 31 - bitresult;
     assert(lz < 24);
     r = (bits->bits >> (31 - lz - forced)) + ((lz - 1) << forced);
@@ -384,7 +435,7 @@ bool BitReader_ReadLength(BitReader *bits, uint32_t*v) {
   unsigned long bitresult;
   int n;
   uint32_t rv;
-  _BitScanReverse(&bitresult, bits->bits);
+  BitScanReverse(&bitresult, bits->bits);
   n = 31 - bitresult;
   if (n > 12) return false;
   bits->bitpos += n;
@@ -404,7 +455,7 @@ bool BitReader_ReadLengthB(BitReader *bits, uint32_t*v) {
   unsigned long bitresult;
   int n;
   uint32_t rv;
-  _BitScanReverse(&bitresult, bits->bits);
+  BitScanReverse(&bitresult, bits->bits);
   n = 31 - bitresult;
   if (n > 12) return false;
   bits->bitpos += n;
@@ -422,7 +473,7 @@ bool BitReader_ReadLengthB(BitReader *bits, uint32_t*v) {
 int Log2RoundUp(uint32_t v) {
   if (v > 1) {
     unsigned long idx;
-    _BitScanReverse(&idx, v - 1);
+    BitScanReverse(&idx, v - 1);
     return idx + 1;
   } else {
     return 0;
@@ -819,7 +870,7 @@ int BitReader_ReadFluff(BitReader *bits, int num_symbols) {
 
   x *= 2;
 
-  _BitScanReverse(&y, x - 1);
+  BitScanReverse(&y, x - 1);
   y += 1;
 
   uint32_t v = bits->bits >> (32 - y);
@@ -922,7 +973,7 @@ bool DecodeGolombRiceLengths(uint8_t*dst, size_t size, BitReader2 *br) {
   if (!(v & 1)) {
     p--;
     unsigned long q;
-    _BitScanForward(&q, v);
+    BitScanForward(&q, v);
     bitpos = 8 - q;
   }
   br->p = p;
